@@ -2,7 +2,7 @@
      
 <img width="1280" height="318" alt="Gemini_Generated_Image_rj2u2qrj2u2qrj2u (1) (Custom)" src="https://github.com/user-attachments/assets/3cb94e1d-08ba-436b-b347-362cb00b481c" />
 
-**Recursively find and obliterate build caches & dependency bloat.**
+**A cross-platform utility for safe, selective cleanup of build artifacts and dependency bloat.**
 
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue?style=flat-square)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
@@ -11,24 +11,33 @@
 
 ---
 
-`shatter` is a fast, cross-platform CLI tool that recursively walks your project directories and destroys build caches (`.next`, `__pycache__`, `.gradle`, …) and downloaded dependency folders (`node_modules`, `.venv`, `target`, …). It's built for developers who work across many projects and want to reclaim disk space in one command.
+`shatter` is a fast, multi-ecosystem CLI tool designed to safely reclaim disk space. It traverses your project directories to identify and remove stale build caches (`.next`, `__pycache__`, `.gradle`) and heavy dependency folders (`node_modules`, `.venv`, `target`). 
 
-## Features
+Built for developers working across multiple languages, `shatter` replaces a dozen disparate cleanup scripts with one standardized, automation-friendly command.
 
-- 🔍 **Two-phase scan** — directory walk is near-instant; size calculation runs in parallel threads
-- 🎯 **Targeted modes** — clean only caches, only deps, or both
-- 🧾 **Dry-run** — preview everything that *would* be deleted before committing
-- ⚡ **Fast mode** — skip size calculation entirely for instant results
-- 📁 **Verbose mode** — group results by project with per-project subtotals  
-- 🛡️ **`.shatterignore`** — drop a file in any directory to protect it and all its children
-- 🌍 **Multi-ecosystem** — JavaScript, Python, Rust, Go, PHP, Ruby, Java, .NET, Dart, and more
-- 🔌 **Contributor-friendly** — add new ecosystems by editing a single config file
+## Why `shatter`?
+
+| Feature | `shatter` | `npkill` | `find / rm` |
+| :--- | :---: | :---: | :---: |
+| **Multi-Ecosystem** | ✅ (Rust, Python, JS, Go, etc.) | ❌ (JS only) | ❌ (Manual setup) |
+| **Safety Guardrails** | ✅ (`.shatterignore`, dry-runs) | ❌ | ❌ |
+| **Parallel Execution** | ✅ (Threaded size calculation) | ❌ | ❌ |
+| **CI/CD Ready** | ✅ (Standard exit codes, `--yes`) | ❌ (Interactive focus) | ✅ |
+
+## Core Features
+
+- 🛡️ **Safety-First Deletion** — includes a strict `--dry-run` mode to audit changes before any destructive action occurs.
+- ⚡ **IO-Optimized Discovery** — separates filesystem walking (BFS) from metadata retrieval (size calculation) using parallel threads to maximize throughput.
+- 🎯 **Targeted Scans** — isolate your cleanup to specific artifact types (`--cache` only, `--deps` only, or `--all`).
+- 🛑 **Directory Protection** — drop a `.shatterignore` file in any directory to completely exclude it and its children from the scan.
+- 🌍 **Universal Compatibility** — native support for JavaScript, Python, Rust, Go, PHP, Ruby, Java, .NET, Dart, and Expo.
+- 🤖 **POSIX-Compliant** — easily integratable into cron jobs or background scripts with non-interactive flags (`--yes`).
 
 ## Install
 
 ```bash
-# Clone the repo
-git clone https://github.com/yourname/shatter.git
+# Clone the repository
+git clone [https://github.com/TheLime1/shatter.git](https://github.com/TheLime1/shatter.git)
 cd shatter
 
 # Create a virtual environment and install
@@ -42,7 +51,7 @@ pip install -e .
 
 ## Usage
 
-```
+```bash
 shatter [PATH] [OPTIONS]
 ```
 
@@ -51,36 +60,36 @@ shatter [PATH] [OPTIONS]
 ### Examples
 
 ```bash
-# Preview everything that would be deleted (safe — nothing is removed)
+# Audit mode: Preview targets and sizes without deleting anything (Recommended first step)
 shatter ~/projects --all --dry-run
 
-# Delete only node_modules / .venv / target / vendor across all projects
+# Reclaim space from heavy dependencies (node_modules, .venv, target, vendor)
 shatter ~/projects --deps
 
-# Delete only build caches (.next, __pycache__, .gradle …)
+# Clear generated build caches (.next, __pycache__, .gradle)
 shatter ~/projects --cache
 
-# Delete everything — fast, no size numbers
+# High-speed cleanup: Skip size calculations and delete immediately
 shatter ~/projects --all --fast
 
-# Per-project breakdown grouped by repo, with sizes
+# Detailed reporting: Group targets by project root with subtotals
 shatter ~/projects --all --dry-run --verbose
 
-# Skip confirmation prompt (useful in scripts / CI)
+# Automated cleanup: Skip confirmation prompts for CI/CD or scripts
 shatter ~/projects --all --yes
 ```
 
-## Flags
+## CLI Options
 
 | Flag | Short | Description |
 |------|-------|-------------|
 | `--cache` | `-c` | Target build cache directories only |
 | `--deps` | `-d` | Target dependency directories only |
 | `--all` | `-a` | Target both caches and deps |
-| `--dry-run` | `-n` | Scan and report — delete nothing |
-| `--fast` | `-f` | Skip size calculation for instant results |
-| `--verbose` | `-v` | Group results by project root with per-project subtotals |
-| `--yes` | `-y` | Skip the deletion confirmation prompt |
+| `--dry-run` | `-n` | Scan and report only — performs no disk mutations |
+| `--fast` | `-f` | Skip parallel size calculation for immediate execution |
+| `--verbose` | `-v` | Group output by project root with localized size subtotals |
+| `--yes` | `-y` | Bypass interactive confirmation prompts |
 
 ## Supported Ecosystems
 
@@ -97,46 +106,36 @@ shatter ~/projects --all --yes
 | **Expo** | `.expo` | — |
 | **Dart / Flutter** | `.dart_tool` `build` | — |
 
-## Protecting a Directory with `.shatterignore`
+## Protecting Critical Paths
 
-Create an empty `.shatterignore` file in any directory to tell `shatter` to skip it and all its subdirectories entirely:
+If you have vendor folders or specific node_modules you need to preserve, create an empty `.shatterignore` file in that directory's root:
 
 ```bash
-touch ~/projects/important-project/.shatterignore
+touch ~/projects/legacy-api/.shatterignore
 ```
 
-`shatter` will print a subtle notice and move on:
+`shatter` halts traversal upon detecting this file, ensuring the directory and its children remain untouched.
 
+```text
+  ⏭  Skipped legacy-api (found .shatterignore)
 ```
-  ⏭  Skipped important-project (found .shatterignore)
-```
 
-## How It Works
+## Architecture & Extensibility
 
-`shatter` uses a two-phase approach to stay fast even across hundreds of projects:
+`shatter` is built to be easily extensible. You can add support for new languages or frameworks without modifying the core traversal or deletion logic.
 
-**Phase 1 — Walk (instant)**
-A BFS traversal of the directory tree collects all matching target paths. The scanner is `.git`-aware: once it enters a project root (a directory containing `.git`), it limits recursion to a shallow depth so it doesn't wander into deeply nested generated code.
-
-**Phase 2 — Size (parallel)**
-Once all paths are collected, their sizes are computed concurrently using a `ThreadPoolExecutor`. Since disk I/O is the bottleneck, threads provide a real speedup here. Use `--fast` to skip this phase entirely if you only want to know *what* is there, not *how much*.
-
-## Architecture
-
-The codebase is designed so contributors can add new ecosystems **without touching any core logic**.
-
-```
+```text
 shatter/
-├── __init__.py       # version
-├── __main__.py       # python -m shatter entry point
+├── __init__.py       # package versioning
+├── __main__.py       # execution entry point
 ├── targets.py        # ← ADD NEW ECOSYSTEMS HERE
-├── scanner.py        # walk + size engine (never needs editing for new ecosystems)
-└── cli.py            # Typer + Rich UI layer
+├── scanner.py        # core BFS walk + threaded size engine
+└── cli.py            # terminal UI and argument parsing
 ```
 
 ### Adding a New Ecosystem
 
-Open `shatter/targets.py` and append an entry to `ECOSYSTEMS`:
+Open `shatter/targets.py` and append your target to the `ECOSYSTEMS` list:
 
 ```python
 Ecosystem(
@@ -146,21 +145,21 @@ Ecosystem(
 ),
 ```
 
-That's it. No other files need to change.
+The core scanner will automatically pick up the new rules on the next run.
 
 ## Contributing
 
-1. Fork the repo and create a branch
-2. Add your ecosystem to `targets.py`
-3. Open a pull request — please include a brief description of the ecosystem and a source link confirming the directory names
+We welcome pull requests for new ecosystems, bug fixes, or performance optimizations. 
+
+1. Fork the repository.
+2. If adding an ecosystem, update `targets.py`.
+3. Submit a PR with a brief description and a reference link confirming the standard directory names for that ecosystem.
 
 ## License
 
-MIT © 2024
+MIT © 2026 Aymen Hmani
 
-## Screenshots
+## Output Previews
 
 <img width="811" height="380" alt="Antigravity_YXlYhz6RGP" src="https://github.com/user-attachments/assets/11c93f6f-a002-4649-b23b-f2c72682318e" />
 <img width="975" height="242" alt="Antigravity_Cvhe8yfEf2" src="https://github.com/user-attachments/assets/0882c89f-7eb9-42f6-8a6d-aac26a77f5c6" />
-
-
