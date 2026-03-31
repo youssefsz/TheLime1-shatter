@@ -77,7 +77,17 @@ shatter ~/projects --all --dry-run --verbose
 
 # Automated cleanup: Skip confirmation prompts for CI/CD or scripts
 shatter ~/projects --all --yes
+
+# Initialise (or reset) ~/.shatter with the built-in ecosystem defaults
+shatter init
 ```
+
+## CLI Commands
+
+| Command         | Description                                                         |
+| --------------- | ------------------------------------------------------------------- |
+| `shatter [PATH]` | Scan and optionally delete targets under `PATH` (default: `.`)     |
+| `shatter init`  | (Re)write `~/.shatter` with all built-in ecosystem defaults        |
 
 ## CLI Options
 

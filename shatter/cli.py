@@ -20,6 +20,7 @@ from rich.text import Text
 
 from . import __version__
 from .scanner import FoundTarget, ScanResult, delete_targets, filter_older_than, format_size, parse_duration, scan
+from .targets import CONFIG_PATH, init_config
 
 app = typer.Typer(
     name="shatter",
@@ -234,7 +235,27 @@ def _totals_panel(result: ScanResult, dry_run: bool, fast: bool = False, older_t
     )
 
 
-# ── command ──────────────────────────────────────
+# ── commands ─────────────────────────────────────
+
+
+@app.command("init")
+def init() -> None:
+    """
+    (Re)initialise [bold]~/.shatter[/bold] with the built-in ecosystem defaults.
+
+    Overwrites any existing config. Run this to reset your customisations
+    or to get the latest built-in ecosystem definitions after upgrading.
+    """
+    _print_banner()
+    init_config()
+    console.print(
+        Panel(
+            f"[bright_green]✔  Config written to [bold]{CONFIG_PATH}[/bold][/bright_green]\n"
+            f"[dim]Edit that file to add, remove, or customise ecosystems.[/dim]",
+            border_style="green",
+            padding=(1, 2),
+        )
+    )
 
 
 @app.command()

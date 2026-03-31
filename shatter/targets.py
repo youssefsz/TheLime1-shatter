@@ -240,6 +240,14 @@ def _ensure_config() -> None:
         )
 
 
+def init_config() -> None:
+    """Write (or overwrite) ~/.shatter with the built-in defaults."""
+    CONFIG_PATH.write_text(
+        json.dumps(_ecosystems_to_json(_DEFAULT_ECOSYSTEMS), indent=2),
+        encoding="utf-8",
+    )
+
+
 def load_ecosystems() -> list[Ecosystem]:
     """
     Return the list of Ecosystem objects from ~/.shatter.
