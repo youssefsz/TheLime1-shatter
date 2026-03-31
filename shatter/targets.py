@@ -27,14 +27,45 @@ ECOSYSTEMS: list[Ecosystem] = [
     # ── JavaScript / TypeScript ────────────────
     Ecosystem(
         name="JavaScript",
-        caches=[".next", ".nuxt", ".svelte-kit", ".swc", ".turbo", ".parcel-cache"],
-        deps=["node_modules"],
+        caches=[
+            ".next",
+            ".nuxt",
+            ".svelte-kit",
+            ".swc",
+            ".turbo",
+            ".parcel-cache",
+            ".eslintcache",
+            ".angular",
+            ".cache",
+            ".docusaurus",
+            ".vuepress",
+            "dist",
+            "build",
+            "out",
+            ".serverless",
+            ".netlify",
+            ".webpack",
+        ],
+        deps=["node_modules", "bower_components"],
     ),
     # ── Python ─────────────────────────────────
     Ecosystem(
         name="Python",
-        caches=["__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache", ".pytype"],
-        deps=[".venv", "venv", ".tox", ".nox"],
+        caches=[
+            "__pycache__",
+            ".pytest_cache",
+            ".mypy_cache",
+            ".ruff_cache",
+            ".pytype",
+            ".hypothesis",
+            ".pyre",
+            ".eggs",
+            "eggs",
+            "htmlcov",
+            "build",
+            "dist",
+        ],
+        deps=[".venv", "venv", "env", "virtualenv", ".tox", ".nox", "__pypackages__"],
     ),
     # ── Rust ───────────────────────────────────
     Ecosystem(
@@ -51,38 +82,116 @@ ECOSYSTEMS: list[Ecosystem] = [
     # ── PHP ────────────────────────────────────
     Ecosystem(
         name="PHP",
-        caches=[],
+        caches=[".phpunit.cache"],
         deps=["vendor"],
     ),
     # ── Ruby ───────────────────────────────────
     Ecosystem(
         name="Ruby",
-        caches=[],
-        deps=["vendor/bundle"],
+        caches=["tmp/cache", ".yardoc"],
+        deps=["vendor/bundle", ".bundle"],
     ),
-    # ── Java / Kotlin ──────────────────────────
+    # ── Java / Scala / Kotlin ──────────────────
     Ecosystem(
-        name="Java",
-        caches=[".gradle", "build"],
+        name="Java / JVM",
+        caches=[".gradle", "build", "target", ".bloop", ".metals"],
         deps=[],
     ),
     # ── .NET / C# ──────────────────────────────
     Ecosystem(
         name=".NET",
-        caches=["bin", "obj"],
-        deps=[],
+        caches=["bin", "obj", ".vs", "TestResults", ".ionide"],
+        deps=["packages"],
     ),
-    # ── Expo / React Native ────────────────────
+    # ── Mobile (Expo / React Native) ───────────
     Ecosystem(
         name="Expo",
-        caches=[".expo"],
+        caches=[".expo", ".cxx"],
         deps=[],
     ),
     # ── Dart / Flutter ─────────────────────────
     Ecosystem(
         name="Dart",
         caches=[".dart_tool", "build"],
+        deps=[".pub-cache"],
+    ),
+    # ── C / C++ ────────────────────────────────
+    Ecosystem(
+        name="C/C++",
+        caches=[
+            "cmake-build-debug",
+            "cmake-build-release",
+            "out",
+            "bin",
+            ".cache",
+            "CMakeFiles",
+            ".ccls-cache",
+        ],
         deps=[],
+    ),
+    # ── Swift / macOS / iOS ────────────────────
+    Ecosystem(
+        name="Swift",
+        caches=["DerivedData", ".build", ".swiftpm"],
+        deps=["Pods", "Carthage"],
+    ),
+    # ── Elixir / Erlang ────────────────────────
+    Ecosystem(
+        name="Elixir",
+        caches=["_build", ".elixir_ls"],
+        deps=["deps"],
+    ),
+    # ── Haskell ────────────────────────────────
+    Ecosystem(
+        name="Haskell",
+        caches=["dist", "dist-newstyle", ".stack-work"],
+        deps=[],
+    ),
+    # ── Clojure ────────────────────────────────
+    Ecosystem(
+        name="Clojure",
+        caches=["target", ".cpcache", ".shadow-cljs"],
+        deps=[],
+    ),
+    # ── OCaml ──────────────────────────────────
+    Ecosystem(
+        name="OCaml",
+        caches=["_build"],
+        deps=[],
+    ),
+    # ── Zig ────────────────────────────────────
+    Ecosystem(
+        name="Zig",
+        caches=["zig-cache", "zig-out"],
+        deps=[],
+    ),
+    # ── Nim ────────────────────────────────────
+    Ecosystem(
+        name="Nim",
+        caches=["nimcache"],
+        deps=[],
+    ),
+    # ── Game Engines (Unity, Godot, Unreal) ────
+    Ecosystem(
+        name="Unity",
+        caches=["Library", "Logs", "obj", "Temp", "MemoryCaptures", "Builds"],
+        deps=[],
+    ),
+    Ecosystem(
+        name="Godot",
+        caches=[".godot"],
+        deps=[],
+    ),
+    Ecosystem(
+        name="Unreal Engine",
+        caches=["Binaries", "Build", "DerivedDataCache", "Intermediate", "Saved"],
+        deps=[],
+    ),
+    # ── Data Science / R ───────────────────────
+    Ecosystem(
+        name="R",
+        caches=[".Rproj.user", ".Rhistory"],
+        deps=["renv"],
     ),
 ]
 
