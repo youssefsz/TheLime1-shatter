@@ -109,17 +109,26 @@ def _kind_badge(kind: str) -> Text:
     )
 
 
-def _flat_table(result: ScanResult, fast: bool = False) -> Table:
-    """Default: one row per found target, sorted by size desc."""
-    size_header = "Count" if fast else "Size"
-    table = Table(
-        title="[bold bright_white]  Scan Results[/bold bright_white]",
+def _make_table(title: str) -> Table:
+    return Table(
+        title=title,
         box=box.ROUNDED,
         border_style="bright_magenta",
         header_style="bold bright_cyan",
         show_lines=True,
         padding=(0, 1),
     )
+
+
+def _size_cell(size_bytes: int, fast: bool) -> str:
+    return "—" if fast else format_size(size_bytes)
+
+
+def _flat_table(result: ScanResult, fast: bool = False) -> Table:
+    """Default: one row per found target, sorted by size desc."""
+    size_header = "Count" if fast else "Size"
+    table = _make_table(
+        "[bold bright_white]  Scan Results[/bold bright_white]")
     table.add_column("#", style="dim", width=4, justify="right")
     table.add_column("Directory", style="bright_white", min_width=42)
     table.add_column("Type", justify="center", width=10)
@@ -132,22 +141,16 @@ def _flat_table(result: ScanResult, fast: bool = False) -> Table:
         else sorted(result.targets, key=lambda x: x.size_bytes, reverse=True)
     )
     for i, t in enumerate(targets, start=1):
-        size_cell = "—" if fast else format_size(t.size_bytes)
-        table.add_row(str(i), str(t.path), _kind_badge(t.kind), size_cell)
+        table.add_row(str(i), str(t.path), _kind_badge(
+            t.kind), _size_cell(t.size_bytes, fast))
 
     return table
 
 
 def _verbose_table(result: ScanResult, fast: bool = False) -> Table:
     """--verbose: group by project root with per-project subtotals."""
-    table = Table(
-        title="[bold bright_white]  Scan Results — by Project[/bold bright_white]",
-        box=box.ROUNDED,
-        border_style="bright_magenta",
-        header_style="bold bright_cyan",
-        show_lines=True,
-        padding=(0, 1),
-    )
+    table = _make_table(
+        "[bold bright_white]  Scan Results — by Project[/bold bright_white]")
     table.add_column("Project / Directory", style="bright_white", min_width=50)
     table.add_column("Type", justify="center", width=10)
     table.add_column("Size" if not fast else "Dirs",
@@ -182,7 +185,7 @@ def _verbose_table(result: ScanResult, fast: bool = False) -> Table:
             table.add_row(
                 Text(f"   └─ {rel}", style="dim white"),
                 _kind_badge(t.kind),
-                "—" if fast else format_size(t.size_bytes),
+                _size_cell(t.size_bytes, fast),
             )
 
     return table
@@ -324,6 +327,18 @@ def shatter(
             raise typer.Exit(1)
 
     # ── phase 1: walk ────────────────────────────
+    def _on_skip(p: Path) -> None:
+        if p == path:
+            console.print(
+                f"  [bold yellow]🛡  {p.name}[/bold yellow] "
+                f"[dim]is protected by .shatterignore — skipping entirely[/dim]"
+            )
+        else:
+            console.print(
+                f"  [dim]⏭  Skipped [bold]{p.name}[/bold] "
+                f"(found .shatterignore)[/dim]"
+            )
+
     with LiveSpinner("Scanning…", style="bright_magenta") as spinner:
         result: ScanResult | None = None
 
@@ -332,9 +347,9 @@ def shatter(
             result = scan(
                 root=path,
                 mode=mode,
-                console=console,
                 fast=fast,
                 on_visit=lambda p: spinner.set_status(f"Scanning  {p.name}"),
+                on_skip=_on_skip,
                 on_size_progress=(
                     None if fast
                     else lambda t: spinner.set_status(
@@ -421,7 +436,12 @@ def shatter(
             progress.update(task, advance=1, name=t.path.name)
 
         removed = delete_targets(
-            result.targets, console, on_progress=_on_progress)
+            result.targets,
+            on_progress=_on_progress,
+            on_error=lambda t, exc: console.print(
+                f"  [red]✗  Failed to remove {t.path}: {exc}[/red]"
+            ),
+        )
 
     console.print(
         Panel(

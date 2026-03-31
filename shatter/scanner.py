@@ -21,8 +21,6 @@ from datetime import timedelta
 from pathlib import Path
 from typing import Callable, Literal
 
-from rich.console import Console
-
 from .targets import ALL_CACHE_DIRS, ALL_DEP_DIRS
 
 IGNORE_FILE = ".shatterignore"
@@ -31,6 +29,11 @@ MAX_PROJECT_DEPTH = 4
 MAX_WORKERS = 16        # parallel threads for size calculation
 
 TargetKind = Literal["cache", "dep"]
+
+
+def _is_ignored(path: Path) -> bool:
+    """Return True if the directory contains a .shatterignore file."""
+    return (path / IGNORE_FILE).exists()
 
 
 # ── data structures ─────────────────────────────
@@ -157,8 +160,8 @@ def _resolve_targets(mode: str) -> set[str]:
 def _walk(
     root: Path,
     wanted: set[str],
-    console: Console,
     on_visit: Callable[[Path], None] | None,
+    on_skip: Callable[[Path], None] | None = None,
 ) -> ScanResult:
     """
     Phase 1: pure BFS walk — no size computation, returns instantly.
@@ -169,12 +172,10 @@ def _walk(
     resolved_root = root.resolve()
 
     # .shatterignore guard for the root itself — bail out immediately
-    if (resolved_root / IGNORE_FILE).exists():
+    if _is_ignored(resolved_root):
         result.skipped.append(resolved_root)
-        console.print(
-            f"  [bold yellow]🛡  {resolved_root.name}[/bold yellow] "
-            f"[dim]is protected by .shatterignore — skipping entirely[/dim]"
-        )
+        if on_skip:
+            on_skip(resolved_root)
         return result
 
     # (path, project_root, remaining_depth)
@@ -188,12 +189,10 @@ def _walk(
             on_visit(current)
 
         # .shatterignore guard for subdirectories
-        if (current / IGNORE_FILE).exists() and current != resolved_root:
+        if _is_ignored(current):
             result.skipped.append(current)
-            console.print(
-                f"  [dim]⏭  Skipped [bold]{current.name}[/bold] "
-                f"(found .shatterignore)[/dim]"
-            )
+            if on_skip:
+                on_skip(current)
             continue
 
         # Detect project root (dir that contains .git)
@@ -270,8 +269,8 @@ def _fill_sizes(
 def scan(
     root: Path,
     mode: str,
-    console: Console,
     on_visit: Callable[[Path], None] | None = None,
+    on_skip: Callable[[Path], None] | None = None,
     on_size_progress: Callable[[FoundTarget], None] | None = None,
     fast: bool = False,
 ) -> ScanResult:
@@ -281,7 +280,7 @@ def scan(
       2. Parallel size calculation (skipped when fast=True)
     """
     wanted = _resolve_targets(mode)
-    result = _walk(root, wanted, console, on_visit)
+    result = _walk(root, wanted, on_visit, on_skip)
     if not fast:
         _fill_sizes(result, on_size_progress)
     return result
@@ -292,8 +291,8 @@ def scan(
 
 def delete_targets(
     targets: list[FoundTarget],
-    console: Console,
     on_progress: Callable[[FoundTarget], None] | None = None,
+    on_error: Callable[[FoundTarget, Exception], None] | None = None,
 ) -> int:
     """Delete every target directory. Returns count of successfully removed dirs."""
     removed = 0
@@ -302,7 +301,8 @@ def delete_targets(
             shutil.rmtree(t.path)
             removed += 1
         except Exception as exc:
-            console.print(f"  [red]✗  Failed to remove {t.path}: {exc}[/red]")
+            if on_error:
+                on_error(t, exc)
         finally:
             if on_progress:
                 on_progress(t)
