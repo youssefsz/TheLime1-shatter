@@ -24,17 +24,24 @@ from .scanner import FoundTarget, ScanResult, delete_targets, filter_older_than,
 from .targets import CONFIG_PATH, init_config
 
 
-class ShatterGroup(TyperGroup):
-    """Group that allows mixing options around positionals at the root level."""
+class DefaultGroup(TyperGroup):
+    """Routes bare flags / paths to the 'shatter' subcommand automatically."""
 
-    allow_interspersed_args = True
+    def parse_args(self, ctx, args):
+        if (
+            args
+            and args[0] not in ("--help", "-h")
+            and args[0] not in self.list_commands(ctx)
+        ):
+            args = ["shatter"] + list(args)
+        return super().parse_args(ctx, args)
+
 
 app = typer.Typer(
     name="shatter",
     help="🔨 Recursively find and obliterate build caches & dependency bloat.",
     add_completion=False,
-    cls=ShatterGroup,
-    context_settings={"allow_interspersed_args": True},
+    cls=DefaultGroup,
     no_args_is_help=True,
     rich_markup_mode="rich",
 )
@@ -303,48 +310,6 @@ OlderThanOpt = Annotated[
         help="Only target dirs not modified within this period. E.g. [bold]30d[/bold], [bold]2w[/bold], [bold]3m[/bold], [bold]1y[/bold].",
     ),
 ]
-
-
-@app.callback(invoke_without_command=True)
-def main(
-    ctx: typer.Context,
-    path: ScanPathArg = Path("."),
-    cache: CacheOpt = False,
-    deps: DepsOpt = False,
-    all_: AllOpt = False,
-    dry_run: DryRunOpt = False,
-    verbose: VerboseOpt = False,
-    fast: FastOpt = False,
-    yes: YesOpt = False,
-    older_than: OlderThanOpt = None,
-) -> None:
-    """Root command callback.
-
-    Supports direct scan usage (`shatter --all --dry-run`) while preserving
-    explicit subcommands like `shatter init` and `shatter shatter ...`.
-    """
-    if ctx.invoked_subcommand is not None:
-        return
-
-    # Keep help output when called without a subcommand and without any scan flags.
-    has_scan_flags = any(
-        [cache, deps, all_, dry_run, verbose, fast, yes, older_than is not None]
-    )
-    if not has_scan_flags:
-        typer.echo(ctx.get_help())
-        raise typer.Exit(0)
-
-    shatter(
-        path=path,
-        cache=cache,
-        deps=deps,
-        all_=all_,
-        dry_run=dry_run,
-        verbose=verbose,
-        fast=fast,
-        yes=yes,
-        older_than=older_than,
-    )
 
 
 @app.command("init")
