@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import threading
 from pathlib import Path
-from typing import Optional
+from typing import Annotated, Optional
 
 import typer
 from rich import box
@@ -250,38 +250,73 @@ def _totals_panel(result: ScanResult, dry_run: bool, fast: bool = False, older_t
 # ── commands ─────────────────────────────────────
 
 
-@app.callback(invoke_without_command=True)
-def main(
-    ctx: typer.Context,
-    path: Path = typer.Argument(
-        ".",
+ScanPathArg = Annotated[
+    Path,
+    typer.Argument(
         help="Root directory to scan.",
         exists=True,
         file_okay=False,
         resolve_path=True,
     ),
-    cache: bool = typer.Option(
-        False, "--cache", "-c", help="Only target build caches."),
-    deps: bool = typer.Option(False, "--deps", "-d",
-                              help="Only target dependency directories."),
-    all_: bool = typer.Option(False, "--all", "-a",
-                              help="Target both caches and deps."),
-    dry_run: bool = typer.Option(
-        False, "--dry-run", "-n", help="Scan only — don't delete anything."),
-    verbose: bool = typer.Option(
-        False, "--verbose", "-v",
-        help="Show per-project size breakdown grouped by project root."
+]
+CacheOpt = Annotated[
+    bool,
+    typer.Option("--cache", "-c", help="Only target build caches."),
+]
+DepsOpt = Annotated[
+    bool,
+    typer.Option("--deps", "-d", help="Only target dependency directories."),
+]
+AllOpt = Annotated[
+    bool,
+    typer.Option("--all", "-a", help="Target both caches and deps."),
+]
+DryRunOpt = Annotated[
+    bool,
+    typer.Option("--dry-run", "-n", help="Scan only — don't delete anything."),
+]
+VerboseOpt = Annotated[
+    bool,
+    typer.Option(
+        "--verbose",
+        "-v",
+        help="Show per-project size breakdown grouped by project root.",
     ),
-    fast: bool = typer.Option(
-        False, "--fast", "-f",
-        help="Skip size calculation — instant results, no byte totals."
+]
+FastOpt = Annotated[
+    bool,
+    typer.Option(
+        "--fast",
+        "-f",
+        help="Skip size calculation — instant results, no byte totals.",
     ),
-    yes: bool = typer.Option(False, "--yes", "-y",
-                             help="Skip confirmation prompt."),
-    older_than: Optional[str] = typer.Option(
-        None, "--older-than", "-o",
+]
+YesOpt = Annotated[
+    bool,
+    typer.Option("--yes", "-y", help="Skip confirmation prompt."),
+]
+OlderThanOpt = Annotated[
+    Optional[str],
+    typer.Option(
+        "--older-than",
+        "-o",
         help="Only target dirs not modified within this period. E.g. [bold]30d[/bold], [bold]2w[/bold], [bold]3m[/bold], [bold]1y[/bold].",
     ),
+]
+
+
+@app.callback(invoke_without_command=True)
+def main(
+    ctx: typer.Context,
+    path: ScanPathArg = Path("."),
+    cache: CacheOpt = False,
+    deps: DepsOpt = False,
+    all_: AllOpt = False,
+    dry_run: DryRunOpt = False,
+    verbose: VerboseOpt = False,
+    fast: FastOpt = False,
+    yes: YesOpt = False,
+    older_than: OlderThanOpt = None,
 ) -> None:
     """Root command callback.
 
@@ -334,35 +369,15 @@ def init() -> None:
 
 @app.command()
 def shatter(
-    path: Path = typer.Argument(
-        ".",
-        help="Root directory to scan.",
-        exists=True,
-        file_okay=False,
-        resolve_path=True,
-    ),
-    cache: bool = typer.Option(
-        False, "--cache", "-c", help="Only target build caches."),
-    deps: bool = typer.Option(False, "--deps", "-d",
-                              help="Only target dependency directories."),
-    all_: bool = typer.Option(False, "--all", "-a",
-                              help="Target both caches and deps."),
-    dry_run: bool = typer.Option(
-        False, "--dry-run", "-n", help="Scan only — don't delete anything."),
-    verbose: bool = typer.Option(
-        False, "--verbose", "-v",
-        help="Show per-project size breakdown grouped by project root."
-    ),
-    fast: bool = typer.Option(
-        False, "--fast", "-f",
-        help="Skip size calculation — instant results, no byte totals."
-    ),
-    yes: bool = typer.Option(False, "--yes", "-y",
-                             help="Skip confirmation prompt."),
-    older_than: Optional[str] = typer.Option(
-        None, "--older-than", "-o",
-        help="Only target dirs not modified within this period. E.g. [bold]30d[/bold], [bold]2w[/bold], [bold]3m[/bold], [bold]1y[/bold].",
-    ),
+    path: ScanPathArg = Path("."),
+    cache: CacheOpt = False,
+    deps: DepsOpt = False,
+    all_: AllOpt = False,
+    dry_run: DryRunOpt = False,
+    verbose: VerboseOpt = False,
+    fast: FastOpt = False,
+    yes: YesOpt = False,
+    older_than: OlderThanOpt = None,
 ) -> None:
     """
     [bright_magenta]🔨 shatter[/bright_magenta] — Obliterate build caches & dependency bloat.
